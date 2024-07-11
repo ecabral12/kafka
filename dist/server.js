@@ -32,9 +32,7 @@ client.createTopics([kafkaTopic], (error, result) => {
         console.error('Error creating Kafka topic:', error);
     }
     else {
-        console.log('Kafka topic created:', result);
         setInterval(() => {
-            console.log('Cities:', Object.keys(producers));
             Object.keys(producers).forEach(city => produceWeatherData(city));
         }, 5000);
     }
@@ -50,7 +48,6 @@ const fetchWeatherData = (city) => __awaiter(void 0, void 0, void 0, function* (
         return response.data;
     }
     catch (error) {
-        console.error(`Error fetching weather data for ${city}:`, error.message);
         return null;
     }
 });
@@ -67,11 +64,9 @@ const createProducer = (city) => __awaiter(void 0, void 0, void 0, function* () 
     yield new Promise((resolve, reject) => {
         producer.on('ready', () => {
             producers[data.location.name] = producer;
-            console.log(`Producer for ${city} created`);
             resolve();
         });
         producer.on('error', function (err) {
-            console.error(`Error producing to Kafka for ${city}:`, err);
             reject(err);
         });
     });
@@ -79,7 +74,6 @@ const createProducer = (city) => __awaiter(void 0, void 0, void 0, function* () 
 const closeProducer = (city) => {
     if (producers[city]) {
         producers[city].close(() => {
-            console.log(`Producer for ${city} closed`);
         });
         delete producers[city];
     }
@@ -148,11 +142,9 @@ wss.on('connection', (ws) => {
             const data = JSON.parse(message.toString());
             if (data.city && !producers[data.city]) {
                 yield createProducer(data.city);
-                console.log(`City added: ${data.city}`);
             }
             else if (data.city && data.remove && producers[data.city]) {
                 closeProducer(data.city);
-                console.log(`City removed: ${data.city}`);
             }
         }
         catch (error) {
@@ -174,7 +166,7 @@ consumerGroup.on('message', function (message) {
     }
 });
 consumerGroup.on('error', function (error) {
-    console.error('Error in Kafka consumer group:', error);
+    console.error('Errror in Kafka consumer group:', error);
 });
 const app = express();
 const server = http.createServer(app);
@@ -213,7 +205,7 @@ server.on('upgrade', function (request, socket, head) {
     });
 });
 server.listen(80, function () {
-    console.log('Server is running on http://localhost:80');
+    console.log('Server is running at http://localhost:80');
 });
 process.on('SIGINT', function () {
     consumerGroup.close(true, function () {

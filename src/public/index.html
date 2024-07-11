@@ -3,22 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weather Dashboard</title>
-    <link rel="stylesheet" type="text/css" href="/styles.css">
+    <title>Kafka Météo</title>
+    <link rel="stylesheet" href="/styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body>
-    <h1 id="title">Weather Dashboard <a target="_blank" href=""></a></h1>
+<body class="bg-gradient-to-r from-blue-500 to-blue-700 text-white min-h-screen flex flex-col">
+    <header class="text-center py-8 bg-gradient-to-r from-blue-500 to-blue-700">
+        <h1 id="title" class="text-4xl font-extrabold text-white">Weather Dashboard <a href="https://weather.com" target="_blank" class="text-blue-200 hover:text-blue-100">Check Weather</a></h1>
+    </header>
 
-    <!-- Formulaire pour ajouter une nouvelle ville -->
-    <form id="cityForm">
-        <input type="text" id="city" name="city" required placeholder="Enter city name">
-        <button type="submit">Add City</button>
+    <form id="cityForm" class="flex gap-4 justify-center max-w-lg mx-auto mb-4 bg-gray-100 rounded-lg p-4 shadow-md">
+        <input type="text" id="city" name="city" required placeholder="Enter city name"
+               class="px-4 py-2 rounded-l-lg border border-gray-300 focus:outline-none focus:border-blue-500 flex-grow text-gray-900">
+        <button type="submit"
+                class="px-4 py-2 rounded-r-lg bg-blue-500 text-white border border-blue-500 hover:bg-blue-600 focus:outline-none transition duration-300">
+            Add City
+        </button>
     </form>
 
-    <!-- Container pour afficher les données -->
-    <div id="weatherContainer"></div>
+    <div id="weatherContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 justify-center mx-auto max-w-screen-lg items-center">
+        <!-- Weather cards will be dynamically added here -->
+    </div>
 
-    <!-- Script JavaScript pour récupérer et afficher les données -->
     <script>
         const updateWeather = async (city, weatherData) => {
             if (!weatherData) {
@@ -31,7 +37,7 @@
 
             if (!card) {
                 card = document.createElement('div');
-                card.classList.add('weather-card');
+                card.classList.add('weather-card', 'rounded', 'border', 'border-gray-300', 'p-4', 'shadow-md', 'transition', 'transform', 'duration-300', 'ease-in-out', 'hover:scale-110');
                 card.id = `weather-card-${city}`;
                 card.dataset.city = city;
                 weatherContainer.appendChild(card);
@@ -40,7 +46,7 @@
             let title = card.querySelector('.title');
             if (!title) {
                 const div = document.createElement('div');
-                div.classList.add('title');
+                div.classList.add('title', 'flex', 'items-center', 'gap-4', 'justify-center'); // Ajout de la classe justify-center
                 card.appendChild(div);
                 title = div;
             }
@@ -48,18 +54,18 @@
             let details = card.querySelector('.details');
             if (!details) {
                 const div = document.createElement('div');
-                div.classList.add('details');
-                const button = document.createElement('button');
-                button.textContent = 'Remove';
-                button.type = 'button';
-                button.addEventListener('click', (e) => {
+                div.classList.add('details', 'text-sm', 'text-white'); // Ajout de la classe text-white
+                const crossIcon = document.createElement('div');
+                crossIcon.innerHTML = '&times;'; // HTML entity for cross
+                crossIcon.classList.add('cross-icon', 'text-gray-700', 'hover:text-red-600', 'cursor-pointer', 'absolute', 'top-2', 'right-2');
+                crossIcon.addEventListener('click', (e) => {
                     e.preventDefault();
                     const cityDataset = card.dataset.city;
                     socket.send(JSON.stringify({ city: cityDataset, remove: true }));
                     card.remove();
                 });
                 card.appendChild(div);
-                card.appendChild(button);
+                card.appendChild(crossIcon);
                 details = div;
             }
 
@@ -72,11 +78,10 @@
             `;
 
             title.innerHTML = `
-                <img src="${current.condition.icon}" alt="${current.condition.text}">
-                <span>${city}</span>
+                <img src="${current.condition.icon}" alt="${current.condition.text}" class="w-20 h-20"> <!-- Agrandissement de l'icône à w-20 et h-20 -->
+                <span class="text-xl font-bold">${city}</span>
             `;
 
-            // Fetch average weather data
             const response = await fetch(`/average-weather/${city}`);
             if (response.ok) {
                 const averageData = await response.json();
@@ -84,7 +89,7 @@
                     let average = card.querySelector('.average');
                     if (!average) {
                         average = document.createElement('div');
-                        average.classList.add('average');
+                        average.classList.add('average', 'text-sm', 'text-white');
                         card.appendChild(average);
                     }
                     average.innerHTML = `
@@ -100,7 +105,6 @@
             console.log('Weather updated for', city);
         }
 
-        // Connexion WebSocket au backend (Node.js)
         const socket = new WebSocket('ws://localhost:5500');
         socket.onmessage = function(event) {
             const weatherData = JSON.parse(event.data);
@@ -108,11 +112,13 @@
             updateWeather(city, weatherData);
         };
 
-        // Gérer la soumission du formulaire de sélection de la ville
         document.getElementById('cityForm').addEventListener('submit', function(event) {
             event.preventDefault();
             const city = document.getElementById('city').value;
-            // Envoyer la ville sélectionnée au serveur via WebSocket
+            if (city.trim() === '') {
+                alert('Please enter a city name.');
+                return;
+            }
             socket.send(JSON.stringify({ city }));
             document.getElementById('city').value = '';
         });

@@ -33,8 +33,17 @@ Avant de commencer, assurez-vous d'avoir installé les outils suivants sur votre
    ```
    npm install
    ```
+## Lancement de l'application manuel
 
-## Lancement de l'application
+Après avoir installé les dépendances, lancez l'application en mode production en utilisant la commande suivante :
+   ```
+   npm run start:prod
+   ```
+
+Cette commande va démarrer votre application Node.js qui utilise Kafka en mode production. Assurez-vous que les conteneurs Docker pour Kafka sont en cours d'exécution avant de lancer cette commande.
+
+
+## Lancement de l'application Auto
 
 ### À l'aide du script (Linux / macOS)
 

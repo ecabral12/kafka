@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Dashboard</title>
+    <link rel="stylesheet" type="text/css" href="/styles.css">
+</head>
+<body>
+    <h1 id="title">Weather Dashboard <a target="_blank" href=""></a></h1>
+
+    <!-- Formulaire pour ajouter une nouvelle ville -->
+    <form id="cityForm">
+        <input type="text" id="city" name="city" required placeholder="Enter city name">
+        <button type="submit">Add City</button>
+    </form>
+
+    <!-- Container pour afficher les données -->
+    <div id="weatherContainer"></div>
+
+    <!-- Script JavaScript pour récupérer et afficher les données -->
+    <script>
+        const updateWeather = async (city, weatherData) => {
+            if (!weatherData) {
+                console.error('No weather data provided');
+                return;
+            }
+
+            const weatherContainer = document.getElementById('weatherContainer');
+            let card = document.getElementById(`weather-card-${city}`);
+
+            if (!card) {
+                card = document.createElement('div');
+                card.classList.add('weather-card');
+                card.id = `weather-card-${city}`;
+                card.dataset.city = city;
+                weatherContainer.appendChild(card);
+            }
+
+            let title = card.querySelector('.title');
+            if (!title) {
+                const div = document.createElement('div');
+                div.classList.add('title');
+                card.appendChild(div);
+                title = div;
+            }
+
+            let details = card.querySelector('.details');
+            if (!details) {
+                const div = document.createElement('div');
+                div.classList.add('details');
+                const button = document.createElement('button');
+                button.textContent = 'Remove';
+                button.type = 'button';
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const cityDataset = card.dataset.city;
+                    socket.send(JSON.stringify({ city: cityDataset, remove: true }));
+                    card.remove();
+                });
+                card.appendChild(div);
+                card.appendChild(button);
+                details = div;
+            }
+
+            const current = weatherData.current;
+            details.innerHTML = `
+                <p><span>Temperature:</span> ${current.temp_c} °C / ${current.temp_f} °F</p>
+                <p><span>Condition:</span> ${current.condition.text}</p>
+                <p><span>Humidity:</span> ${current.humidity}%</p>
+                <p><span>Wind:</span> ${current.wind_kph} km/h, ${current.wind_dir}</p>
+            `;
+
+            title.innerHTML = `
+                <img src="${current.condition.icon}" alt="${current.condition.text}">
+                <span>${city}</span>
+            `;
+
+            // Fetch average weather data
+            const response = await fetch(`/average-weather/${city}`);
+            if (response.ok) {
+                const averageData = await response.json();
+                if (averageData) {
+                    let average = card.querySelector('.average');
+                    if (!average) {
+                        average = document.createElement('div');
+                        average.classList.add('average');
+                        card.appendChild(average);
+                    }
+                    average.innerHTML = `
+                        <p><span>7-day Average Temperature:</span> ${averageData._avg.temperatureC.toFixed(2)} °C / ${averageData._avg.temperatureF.toFixed(2)} °F</p>
+                        <p><span>7-day Average Humidity:</span> ${averageData._avg.humidity.toFixed(2)}%</p>
+                        <p><span>7-day Average Wind Speed:</span> ${averageData._avg.windSpeed.toFixed(2)} km/h</p>
+                    `;
+                }
+            } else {
+                console.error('Failed to fetch average weather data');
+            }
+
+            console.log('Weather updated for', city);
+        }
+
+        // Connexion WebSocket au backend (Node.js)
+        const socket = new WebSocket('ws://localhost:5500');
+        socket.onmessage = function(event) {
+            const weatherData = JSON.parse(event.data);
+            const city = weatherData.location.name;
+            updateWeather(city, weatherData);
+        };
+
+        // Gérer la soumission du formulaire de sélection de la ville
+        document.getElementById('cityForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const city = document.getElementById('city').value;
+            // Envoyer la ville sélectionnée au serveur via WebSocket
+            socket.send(JSON.stringify({ city }));
+            document.getElementById('city').value = '';
+        });
+    </script>
+</body>
+</html>
